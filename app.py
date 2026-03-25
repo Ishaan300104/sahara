@@ -1,11 +1,11 @@
 from flask import Flask, render_template, request, jsonify, session
-import anthropic
+from groq import Groq
 import os
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'manas-dev-secret-2026')
+app.secret_key = os.environ.get('SECRET_KEY', 'sahara-dev-secret-2026')
 
-client = anthropic.Anthropic(api_key=os.environ.get('ANTHROPIC_API_KEY'))
+client = Groq(api_key=os.environ.get('GROQ_API_KEY'))
 
 CRISIS_KEYWORDS = [
     'suicide', 'suicidal', 'kill myself', 'end my life', 'want to die',
@@ -79,13 +79,12 @@ def chat():
     messages = messages[-12:]
 
     try:
-        response = client.messages.create(
-            model='claude-haiku-4-5-20251001',
+        response = client.chat.completions.create(
+            model='llama-3.3-70b-versatile',
             max_tokens=350,
-            system=SYSTEM_PROMPT,
-            messages=messages,
+            messages=[{'role': 'system', 'content': SYSTEM_PROMPT}] + messages,
         )
-        reply = response.content[0].text
+        reply = response.choices[0].message.content
     except Exception as e:
         return jsonify({'error': f'AI error: {str(e)}'}), 500
 
