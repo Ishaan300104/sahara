@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manas — AI Mental Health Chatbot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #e8f4f8 0%, #f0f7ee 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── HEADER ── */
+    header {
+      width: 100%;
+      max-width: 760px;
+      background: #fff;
+      border-radius: 20px 20px 0 0;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e5edf3;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, #4a90c4, #5bb8a0);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+
+    .brand-text h1 {
+      font-size: 20px; font-weight: 700; color: #1a2e3b;
+    }
+    .brand-text p {
+      font-size: 11px; color: #7a9bb0; margin-top: 1px;
+    }
+
+    .ai-badge {
+      background: #fff3cd; color: #856404;
+      border: 1px solid #ffc107;
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    /* ── CHAT WINDOW ── */
+    .chat-wrapper {
+      width: 100%; max-width: 760px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+
+    #chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+
+    /* Welcome message */
+    .welcome {
+      background: linear-gradient(135deg, #e8f4f8, #edf7f2);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 4px;
+    }
+    .welcome h3 { color: #1a2e3b; font-size: 15px; margin-bottom: 6px; }
+    .welcome p { color: #4a6274; font-size: 13px; line-height: 1.6; }
+
+    /* Messages */
+    .msg {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      max-width: 85%;
+    }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg.bot  { align-self: flex-start; }
+
+    .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .bot .avatar { background: linear-gradient(135deg, #4a90c4, #5bb8a0); }
+    .user .avatar { background: linear-gradient(135deg, #7c6fcd, #a78bfa); }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #1a2e3b;
+    }
+    .bot  .bubble { background: #f0f7ff; border-bottom-left-radius: 4px; }
+    .user .bubble { background: linear-gradient(135deg, #4a90c4, #5bb8a0); color: #fff; border-bottom-right-radius: 4px; }
+
+    /* Typing indicator */
+    .typing { display: flex; gap: 5px; padding: 14px 18px; align-items: center; }
+    .typing span {
+      width: 8px; height: 8px; background: #9bb9cc;
+      border-radius: 50%; animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    /* ── CRISIS BANNER ── */
+    #crisis-banner {
+      display: none;
+      background: #fff5f5;
+      border-top: 3px solid #e53e3e;
+      padding: 16px 24px;
+    }
+    #crisis-banner h3 {
+      color: #c53030; font-size: 14px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .resource-list { display: flex; flex-direction: column; gap: 6px; }
+    .resource-item {
+      display: flex; align-items: center; gap: 10px;
+      background: #fff; border: 1px solid #fed7d7;
+      border-radius: 8px; padding: 8px 12px;
+    }
+    .resource-item .icon { font-size: 16px; }
+    .resource-item .label { font-size: 12px; color: #718096; }
+    .resource-item .val { font-size: 14px; font-weight: 700; color: #c53030; }
+
+    /* ── INPUT BAR ── */
+    footer {
+      width: 100%; max-width: 760px;
+      background: #fff;
+      border-top: 1px solid #e5edf3;
+      border-radius: 0 0 20px 20px;
+      padding: 14px 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    #msg-input {
+      flex: 1;
+      border: 1.5px solid #d4e6f1;
+      border-radius: 24px;
+      padding: 11px 18px;
+      font-size: 14px;
+      color: #1a2e3b;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+      font-family: inherit;
+      max-height: 120px;
+      line-height: 1.4;
+    }
+    #msg-input:focus { border-color: #4a90c4; }
+    #msg-input::placeholder { color: #b0c8d8; }
+
+    #send-btn {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #4a90c4, #5bb8a0);
+      border: none; border-radius: 50%;
+      cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      transition: transform 0.15s, opacity 0.15s;
+      flex-shrink: 0;
+    }
+    #send-btn:hover { transform: scale(1.08); }
+    #send-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+    #send-btn svg { width: 20px; height: 20px; fill: #fff; }
+
+    #reset-btn {
+      background: none; border: none;
+      color: #9bb9cc; font-size: 20px;
+      cursor: pointer; padding: 4px;
+      transition: color 0.2s;
+    }
+    #reset-btn:hover { color: #e53e3e; }
+
+    /* ── DISCLAIMER STRIP ── */
+    .disclaimer {
+      width: 100%; max-width: 760px;
+      text-align: center;
+      font-size: 11px; color: #9bb9cc;
+      padding: 8px 0 16px;
+    }
+
+    /* Scrollbar */
+    #chat-area::-webkit-scrollbar { width: 5px; }
+    #chat-area::-webkit-scrollbar-track { background: transparent; }
+    #chat-area::-webkit-scrollbar-thumb { background: #d4e6f1; border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="logo">🧠</div>
+      <div class="brand-text">
+        <h1>Manas</h1>
+        <p>IIT Jodhpur · Student Wellness Chatbot</p>
+      </div>
+    </div>
+    <div class="ai-badge">⚠️ AI Chatbot — Not a therapist</div>
+  </header>
+
+  <!-- CHAT WINDOW -->
+  <div class="chat-wrapper">
+    <div id="chat-area">
+      <div class="welcome">
+        <h3>Hi there 👋 I'm Manas, your peer listener.</h3>
+        <p>
+          This is a safe, non-judgmental space. Tell me how you're feeling — whether it's
+          exam stress, anxiety, loneliness, or just a rough day. I'm here to listen.<br><br>
+          <strong>Remember:</strong> I'm an AI, not a counselor. For serious concerns,
+          please reach out to the IIT Jodhpur Student Wellness Cell.
+        </p>
+      </div>
+    </div>
+
+    <!-- CRISIS BANNER -->
+    <div id="crisis-banner">
+      <h3>🆘 It sounds like you may need immediate support</h3>
+      <div class="resource-list" id="resource-list"></div>
+    </div>
+  </div>
+
+  <!-- INPUT BAR -->
+  <footer>
+    <button id="reset-btn" title="Start new conversation">🗑️</button>
+    <textarea id="msg-input" rows="1" placeholder="Share how you're feeling..."></textarea>
+    <button id="send-btn">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+      </svg>
+    </button>
+  </footer>
+
+  <p class="disclaimer">
+    Manas is an AI peer listener for educational purposes · IIT Jodhpur · MSL7500 Ethical Issues with AI
+  </p>
+
+  <script>
+    const chatArea   = document.getElementById('chat-area');
+    const input      = document.getElementById('msg-input');
+    const sendBtn    = document.getElementById('send-btn');
+    const resetBtn   = document.getElementById('reset-btn');
+    const crisisBanner = document.getElementById('crisis-banner');
+    const resourceList = document.getElementById('resource-list');
+
+    function scrollBottom() {
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function addMsg(text, role) {
+      const wrap = document.createElement('div');
+      wrap.className = `msg ${role}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = role === 'bot' ? '🤖' : '🙂';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text;
+
+      wrap.appendChild(avatar);
+      wrap.appendChild(bubble);
+      chatArea.appendChild(wrap);
+      scrollBottom();
+    }
+
+    function showTyping() {
+      const wrap = document.createElement('div');
+      wrap.className = 'msg bot';
+      wrap.id = 'typing-indicator';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = '🤖';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble typing';
+      bubble.innerHTML = '<span></span><span></span><span></span>';
+
+      wrap.appendChild(avatar);
+      wrap.appendChild(bubble);
+      chatArea.appendChild(wrap);
+      scrollBottom();
+    }
+
+    function removeTyping() {
+      const el = document.getElementById('typing-indicator');
+      if (el) el.remove();
+    }
+
+    function showCrisis(resources) {
+      crisisBanner.style.display = 'block';
+      resourceList.innerHTML = '';
+      resources.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'resource-item';
+        item.innerHTML = `
+          <span class="icon">📞</span>
+          <div>
+            <div class="label">${r.label}</div>
+            <div class="val">${r.value}</div>
+          </div>`;
+        resourceList.appendChild(item);
+      });
+      scrollBottom();
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      // Hide crisis banner on new message
+      crisisBanner.style.display = 'none';
+
+      addMsg(text, 'user');
+      input.value = '';
+      input.style.height = 'auto';
+      sendBtn.disabled = true;
+      showTyping();
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        removeTyping();
+
+        if (data.error) {
+          addMsg('Sorry, something went wrong. Please try again.', 'bot');
+        } else {
+          addMsg(data.response, 'bot');
+          if (data.is_crisis) {
+            showCrisis(data.resources);
+          }
+        }
+      } catch (e) {
+        removeTyping();
+        addMsg('Connection error. Please check your internet and try again.', 'bot');
+      }
+
+      sendBtn.disabled = false;
+      input.focus();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Auto-resize textarea
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    });
+
+    resetBtn.addEventListener('click', async () => {
+      await fetch('/reset', { method: 'POST' });
+      chatArea.innerHTML = `
+        <div class="welcome">
+          <h3>Hi there 👋 I'm Manas, your peer listener.</h3>
+          <p>
+            This is a safe, non-judgmental space. Tell me how you're feeling — whether it's
+            exam stress, anxiety, loneliness, or just a rough day. I'm here to listen.<br><br>
+            <strong>Remember:</strong> I'm an AI, not a counselor. For serious concerns,
+            please reach out to the IIT Jodhpur Student Wellness Cell.
+          </p>
+        </div>`;
+      crisisBanner.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
