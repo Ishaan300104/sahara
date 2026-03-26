@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session
 from groq import Groq
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sahara-dev-secret-2026')
@@ -10,37 +11,38 @@ client = Groq(api_key=os.environ.get('GROQ_API_KEY'))
 CRISIS_KEYWORDS = [
     'suicide', 'suicidal', 'kill myself', 'end my life', 'want to die',
     'self harm', 'self-harm', 'hurt myself', 'cutting myself', 'no reason to live',
-    'can\'t go on', 'cannot go on', 'worthless', 'better off dead', 'end it all',
+    "can't go on", 'cannot go on', 'worthless', 'better off dead', 'end it all',
     'take my life', 'not worth living'
 ]
 
-SYSTEM_PROMPT = """You are Sahara, a warm and supportive peer listener chatbot designed for college students at IIT Jodhpur. "Sahara" (सहारा) means support and refuge in Hindi.
+SYSTEM_PROMPT = """You are Sahara, a warm and supportive peer listener chatbot for college students at IIT Jodhpur. "Sahara" (सहारा) means support and refuge in Hindi.
 
 Your role:
 - Listen empathetically to students experiencing stress, anxiety, loneliness, exam pressure, or burnout
 - Offer genuine emotional support, practical coping strategies, and mental wellness tips
 - Ask thoughtful follow-up questions to understand the student better
-- Suggest healthy habits, breathing exercises, or study break techniques when appropriate
+- Suggest healthy habits, breathing exercises, or study break techniques when relevant
 - Keep responses warm, conversational, and concise (2-4 sentences)
 
 Strict boundaries:
 - You are NOT a therapist or doctor. NEVER diagnose any mental health condition.
 - NEVER recommend or mention any medications.
 - You are a first point of contact — a supportive peer, not a clinician.
-- If the student needs more support than you can offer, gently suggest speaking with the IIT Jodhpur counselor.
+- If the student needs more support, gently suggest speaking with the IIT Jodhpur counselor.
 
-Tone: Like a caring, understanding batchmate — warm, non-judgmental, and real. Avoid clinical or overly formal language. Use simple English."""
+Tone: Like a caring, understanding batchmate — warm, non-judgmental, real. Simple English."""
 
 
 def detect_crisis(message: str) -> bool:
-    msg = message.lower()
-    return any(keyword in msg for keyword in CRISIS_KEYWORDS)
+    return any(kw in message.lower() for kw in CRISIS_KEYWORDS)
 
 
 @app.route('/')
 def index():
     if 'messages' not in session:
         session['messages'] = []
+    if 'mood_log' not in session:
+        session['mood_log'] = []
     return render_template('index.html')
 
 
@@ -48,6 +50,7 @@ def index():
 def chat():
     data = request.get_json()
     user_message = (data.get('message') or '').strip()
+    mood_context = data.get('mood', '')
 
     if not user_message:
         return jsonify({'error': 'Empty message'}), 400
@@ -65,6 +68,7 @@ def chat():
                 {'label': 'iCall (National Helpline)', 'value': '9152987821'},
                 {'label': 'NIMHANS Helpline', 'value': '080-46110007'},
                 {'label': 'IIT Jodhpur Student Wellness Cell', 'value': 'counselor@iitj.ac.in'},
+                {'label': 'Vandrevala Foundation (24x7)', 'value': '1860-2662-345'},
             ]
         })
 
@@ -74,15 +78,18 @@ def chat():
 
     messages = list(session['messages'])
     messages.append({'role': 'user', 'content': user_message})
-
-    # Keep last 12 turns to avoid token overflow
     messages = messages[-12:]
+
+    # Inject mood context into system prompt if available
+    system = SYSTEM_PROMPT
+    if mood_context:
+        system += f"\n\nNote: The student has indicated their current mood is: {mood_context}. Keep this in mind."
 
     try:
         response = client.chat.completions.create(
             model='llama-3.3-70b-versatile',
             max_tokens=350,
-            messages=[{'role': 'system', 'content': SYSTEM_PROMPT}] + messages,
+            messages=[{'role': 'system', 'content': system}] + messages,
         )
         reply = response.choices[0].message.content
     except Exception as e:
@@ -93,6 +100,35 @@ def chat():
     session.modified = True
 
     return jsonify({'response': reply, 'is_crisis': False})
+
+
+@app.route('/mood', methods=['POST'])
+def log_mood():
+    """Layer 4 — Mood Tracker: log a mood entry for the session."""
+    data = request.get_json()
+    mood = data.get('mood', '')
+    score = data.get('score', 3)
+
+    if 'mood_log' not in session:
+        session['mood_log'] = []
+
+    entry = {
+        'mood': mood,
+        'score': score,
+        'time': datetime.now().strftime('%H:%M'),
+        'date': datetime.now().strftime('%b %d')
+    }
+    log = list(session['mood_log'])
+    log.append(entry)
+    session['mood_log'] = log[-10:]  # keep last 10
+    session.modified = True
+
+    return jsonify({'status': 'ok', 'log': session['mood_log']})
+
+
+@app.route('/mood', methods=['GET'])
+def get_mood():
+    return jsonify({'log': session.get('mood_log', [])})
 
 
 @app.route('/reset', methods=['POST'])
