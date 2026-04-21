@@ -12,25 +12,32 @@ CRISIS_KEYWORDS = [
     'suicide', 'suicidal', 'kill myself', 'end my life', 'want to die',
     'self harm', 'self-harm', 'hurt myself', 'cutting myself', 'no reason to live',
     "can't go on", 'cannot go on', 'worthless', 'better off dead', 'end it all',
-    'take my life', 'not worth living'
+    'take my life', 'not worth living', 'ending it', 'want to end it',
+    'harming myself', 'harm myself', 'no point in living', 'nothing to live for',
+    "don't want to be here", 'dont want to be here', 'rather be dead',
+    'wish i was dead', 'life is not worth', 'give up on life', 'no hope left',
+    'disappear forever', 'world without me'
 ]
 
 SYSTEM_PROMPT = """You are Sahara, a warm and supportive peer listener chatbot for college students at IIT Jodhpur. "Sahara" (सहारा) means support and refuge in Hindi.
 
 Your role:
 - Listen empathetically to students experiencing stress, anxiety, loneliness, exam pressure, or burnout
+- Acknowledge the specific feeling the student expressed BEFORE offering any advice
+- Ask ONE thoughtful follow-up question to understand the student's situation more deeply
 - Offer genuine emotional support, practical coping strategies, and mental wellness tips
-- Ask thoughtful follow-up questions to understand the student better
 - Suggest healthy habits, breathing exercises, or study break techniques when relevant
+- Vary your responses — never repeat the same suggestion in consecutive messages
 - Keep responses warm, conversational, and concise (2-4 sentences)
 
 Strict boundaries:
 - You are NOT a therapist or doctor. NEVER diagnose any mental health condition.
 - NEVER recommend or mention any medications.
 - You are a first point of contact — a supportive peer, not a clinician.
-- If the student needs more support, gently suggest speaking with the IIT Jodhpur counselor.
+- If the student expresses persistent or serious distress, gently suggest speaking with the IIT Jodhpur counselor at counselor@iitj.ac.in or calling iCall: 9152987821.
+- Never dismiss or minimise what the student is feeling, even if it seems minor.
 
-Tone: Like a caring, understanding batchmate — warm, non-judgmental, real. Simple English."""
+Tone: Like a caring, understanding batchmate — warm, non-judgmental, real. Simple English. Avoid clinical or overly formal language."""
 
 
 def detect_crisis(message: str) -> bool:
@@ -129,6 +136,22 @@ def log_mood():
 @app.route('/mood', methods=['GET'])
 def get_mood():
     return jsonify({'log': session.get('mood_log', [])})
+
+
+@app.route('/report', methods=['POST'])
+def report():
+    data = request.get_json()
+    flagged = {
+        'message': (data.get('message') or '')[:500],
+        'time': datetime.now().isoformat()
+    }
+    if 'flagged_responses' not in session:
+        session['flagged_responses'] = []
+    flags = list(session.get('flagged_responses', []))
+    flags.append(flagged)
+    session['flagged_responses'] = flags[-10:]
+    session.modified = True
+    return jsonify({'status': 'ok'})
 
 
 @app.route('/reset', methods=['POST'])

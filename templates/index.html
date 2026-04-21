@@ -461,6 +461,62 @@
     }
     .modal-btn.ready { opacity: 1; pointer-events: auto; }
 
+    /* ── COUNSELOR BUTTON ── */
+    .counselor-btn {
+      background: none;
+      border: 1.5px solid var(--primary2);
+      color: var(--primary2);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px; font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .counselor-btn:hover { background: var(--primary2); color: #fff; }
+
+    /* ── AI LABEL + FLAG ── */
+    .msg-meta { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+    .ai-label { font-size: 10px; color: var(--text3); font-style: italic; }
+    .flag-btn {
+      background: none; border: none;
+      color: var(--text3); font-size: 11px;
+      cursor: pointer; padding: 0 2px;
+      transition: color 0.2s; line-height: 1;
+    }
+    .flag-btn:hover { color: var(--danger); }
+    .flag-btn:disabled { color: var(--danger); cursor: default; }
+
+    /* ── REMINDER TOAST ── */
+    .reminder-toast {
+      background: var(--warn-bg);
+      border: 1px solid #f6c342;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 12px;
+      color: #7a5a0a;
+      margin: 0 16px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      animation: slideIn 0.3s ease;
+    }
+    [data-theme="dark"] .reminder-toast { color: #e0c060; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .reminder-close { cursor: pointer; font-size: 13px; flex-shrink: 0; opacity: 0.7; }
+    .reminder-close:hover { opacity: 1; }
+
+    /* ── CRISIS PULSE ── */
+    @keyframes crisisPulse {
+      0%,100% { border-top-color: var(--danger); }
+      50% { border-top-color: #fc8181; }
+    }
+    #crisis-banner.visible { animation: crisisPulse 1s ease 3; }
+
     /* ── DISCLAIMER ── */
     footer {
       text-align: center;
@@ -484,10 +540,12 @@
     <h2>Welcome to Sahara</h2>
     <p>Sahara (सहारा) is an <strong>AI peer listener</strong> for IIT Jodhpur students. Before we begin, please read this:</p>
     <ul>
-      <li>This is <strong>not</strong> a replacement for a human counselor</li>
-      <li>Your conversations are session-only and <strong>not stored</strong> after you leave</li>
-      <li>In a crisis, we will show you real helpline numbers immediately</li>
-      <li>This tool is for educational purposes (MSL7500)</li>
+      <li>This is <strong>not</strong> a replacement for a human counselor or therapist</li>
+      <li>Your conversations are <strong>session-only</strong> — no data is stored after you leave</li>
+      <li>No personal identifiers are collected — only your typed messages during this session</li>
+      <li>In a crisis, helpline numbers will appear immediately and prominently</li>
+      <li>You can end and clear the session at any time using the 🗑️ button</li>
+      <li>This tool is for educational purposes (MSL7500 — Ethical Issues with AI)</li>
     </ul>
     <label class="consent-check">
       <input type="checkbox" id="consent-check" onchange="toggleConsent(this)" />
@@ -507,6 +565,7 @@
     </div>
   </div>
   <div class="nav-right">
+    <button class="counselor-btn" onclick="goToResources()" title="View helplines and counselor contact">📞 Talk to Counselor</button>
     <div class="ai-badge">⚠️ AI — Not a therapist</div>
     <div class="icon-btn" onclick="toggleTheme()" title="Toggle dark mode" id="theme-btn">🌙</div>
   </div>
@@ -545,6 +604,11 @@
       <div id="crisis-banner">
         <h4>🆘 It sounds like you may need immediate support</h4>
         <div class="res-grid" id="res-grid"></div>
+      </div>
+
+      <div id="reminder-toast" style="display:none">
+        <span>💡 <strong>Reminder:</strong> Sahara is an AI, not a therapist. For real support, contact <strong>counselor@iitj.ac.in</strong> or call iCall: <strong>9152987821</strong></span>
+        <span class="reminder-close" onclick="document.getElementById('reminder-toast').style.display='none'">✕</span>
       </div>
 
       <div class="input-bar">
